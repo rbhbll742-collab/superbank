@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <title>Учебный банк — демо</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    body { font-family: Arial, sans-serif; margin: 0; padding: 16px; background: #f5f6f7; color: #333; }
+    h1 { margin-bottom: 8px; }
+
+    /* Вкладки */
+    .tabs { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; }
+    .tab-btn {
+      padding: 10px 16px;
+      border: 1px solid #ccc;
+      background: #fff;
+      cursor: pointer;
+      border-radius: 6px 6px 0 0;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .tab-btn.active {
+      background: #fff;
+      border-bottom: 2px solid #007bff;
+      color: #007bff;
+    }
+
+    /* Контент вкладок */
+    .tab-content {
+      display: none;
+      padding: 16px;
+      background: #fff;
+      border: 1px solid #ddd;
+      border-top: none;
+      border-radius: 0 8px 8px 8px;
+      min-height: 200px;
+    }
+    .tab-content.active { display: block; }
+
+    /* Формы */
+    .form-row { margin-bottom: 12px; }
+    input, select { padding: 8px; border: 1px solid #ccc; border-radius: 4px; }
+    button.primary {
+      padding: 8px 16px; cursor: pointer; background: #007bff; color: #fff; border: none; border-radius: 4px;
+    }
+    button.secondary {
+      padding: 8px 16px; cursor: pointer; background: #e0e0e0; border: none; border-radius: 4px;
+    }
+    button.danger {
+      padding: 8px 16px; cursor: pointer; background: #dc3545; color: #fff; border: none; border-radius: 4px;
+    }
+
+    /* Карточки */
+    .list-container { margin-top: 16px; }
+    .card {
+      border: 1px solid #ddd; padding: 12px; margin-bottom: 8px; background: #fafafa; border-radius: 6px;
+      cursor: pointer; display: flex; flex-direction: column; gap: 6px;
+    }
+    .card:hover { box-shadow: 0 2px 6px rgba(0,0,0,0.1); }
+    .card.closed { opacity: 0.6; text-decoration: line-through; border-color: #999; }
+    .card-header { display: flex; align-items: center; gap: 8px; justify-content: space-between; }
+    .status-badge {
+      font-size: 0.8em; padding: 2px 6px; border-radius: 4px; color: #fff;
+    }
+    .status-active { background: #28a745; }
+    .status-closed { background: #dc3545; }
+
+    /* Детали счёта/кредита */
+    .account-details {
+      margin-top: 16px; padding: 16px; background: #fff; border: 1px dashed #ccc;
+      border-radius: 8px; display: none;
+    }
+    .account-details.visible { display: block; }
+    .detail-row { display: flex; justify-content: space-between; margin-bottom: 6px; }
+    .detail-label { color: #666; }
+  </style>
+</head>
+<body>
+  <h1><i class="fa-solid fa-building"></i> Учебный банк — демо</h1>
+
+  <!-- Вкладки -->
+  <div class="tabs">
+    <button class="tab-btn active" data-target="home"><i class="fa-solid fa-house"></i> Главная</button>
+    <button class="tab-btn" data-target="deposits"><i class="fa-solid fa-coins"></i> Вклады</button>
+    <button class="tab-btn" data-target="credits"><i class="fa-solid fa-money-bills"></i> Кредиты</button>
+  </div>
+
+  <!-- Главная -->
+  <div id="home" class="tab-content active">
+    <p>Добро пожаловать в учебный банк. Используйте вкладки, чтобы открыть вклад, взять кредит или управлять счетами.</p>
+  </div>
+
+  <!-- Вклады -->
+  <div id="deposits" class="tab-content">
+    <h2><i class="fa-solid fa-piggy-bank"></i> Открыть вклад</h2>
+    <div class="form-row">
+      <input type="number" id="depositAmount" placeholder="Сумма (₽)" min="1000" value="100000">
+      <select id="depositTerm">
+        <option value="3">3 месяца</option>
+        <option value="6" selected>6 месяцев</option>
+        <option value="12">12 месяцев</option>
+      </select>
+      <button class="primary" onclick="openDeposit()">Открыть вклад</button>
+    </div>
+
+    <div class="list-container" id="depositsList"></div>
+
+    <div id="accountDetails" class="account-details">
+      <h3><i class="fa-solid fa-user-tie"></i> Детали счёта</h3>
+      <div class="detail-row"><span class="detail-label">ID счёта:</span> <span id="detailId"></span></div>
+      <div class="detail-row"><span class="detail-label">Сумма вклада:</span> <span id="detailAmount"></span></div>
+      <div class="detail-row"><span class="detail-label">Срок:</span> <span id="detailTerm"></span></div>
+      <div class="detail-row"><span class="detail-label">Ставка:</span> <span id="detailRate"></span></div>
+      <div class="detail-row"><span class="detail-label">Проценты:</span> <span id="detailInterest"></span></div>
+      <div class="detail-row"><span class="detail-label">Итого к возврату:</span> <span id="detailTotal"></span></div>
+      <br>
+      <button class="danger" onclick="closeSelectedAccount()">Закрыть счёт</button>
+      <button class="secondary" onclick="closeAccountDetails()">Закрыть детали</button>
+    </div>
+  </div>
+
+  <!-- Кредиты -->
+  <div id="credits" class="tab-content">
+    <h2><i class="fa-solid fa-hand-holding-money"></i> Взять кредит</h2>
+    <div class="form-row">
+      <input type="number" id="creditAmount" placeholder="Сумма кредита (₽)" min="5000" value="200000">
+      <select id="creditTerm">
+        <option value="6">6 месяцев</option>
+        <option value="12" selected>12 месяцев</option>
+        <option value="24">24 месяца</option>
+      </select>
+      <button class="primary" onclick="takeCredit()">Взять кредит</button>
+    </div>
+
+    <div class="list-container" id="creditsList"></div>
+
+    <div id="creditDetails" class="account-details">
+      <h3><i class="fa-solid fa-file-contract"></i> Детали кредита</h3>
+      <div class="detail-row"><span class="detail-label">ID кредита:</span> <span id="cDetailId"></span></div>
+      <div class="detail-row"><span class="detail-label">Сумма кредита:</span> <span id="cDetailAmount"></span></div>
+      <div class="detail-row"><span class="detail-label">Срок:</span> <span id="cDetailTerm"></span></div>
+      <div class="detail-row"><span class="detail-label">Ставка:</span> <span id="cDetailRate"></span></div>
+      <div class="detail-row"><span class="detail-label">Переплата:</span> <span id="cDetailOverpayment"></span></div>
+      <div class="detail-row"><span class="detail-label">Всего к выплате:</span> <span id="cDetailTotal"></span></div>
+      <br>
+      <button class="danger" onclick="closeSelectedCredit()">Погасить кредит</button>
+      <button class="secondary" onclick="closeCreditDetails()">Закрыть детали</button>
+    </div>
+  </div>
+
+  <script>
+    // Переключение вкладок
+    const tabBtns = document.querySelectorAll('.tab-btn');
+    const contents = document.querySelectorAll('.tab-content');
+
+    tabBtns.forEach(btn => {
+      btn.addEventListener('click', () => {
+        const target = btn.getAttribute('data-target');
+        tabBtns.forEach(b => b.classList.remove('active'));
+        contents.forEach(c => c.classList.remove('active'));
+        btn.classList.add('active');
+        document.getElementById(target).classList.add('active');
+      });
+    });
+
+    // Вклады
+    let deposits = [];
+    function openDeposit() {
+      const amount = Number(document.getElementById('depositAmount').value);
+      const termMonths = Number(document.getElementById('depositTerm').value);
+
+      if (amount < 1000) { alert('Минимальная сумма вклада — 1000 ₽'); return; }
+
+      const ratePerYear = 12;
+      const interest = amount * (ratePerYear / 100 / 12) * termMonths;
+      const total = amount + interest;
+
+      deposits.push({
+        id: Date.now(),
+        amount,
+        termMonths,
+        ratePerYear,
+        interest,
+        total,
+        status: 'active'
+      });
+      renderDeposits();
+      document.getElementById('depositAmount').value = '';
+    }
+
+    function renderDeposits() {
+      const list = document.getElementById('depositsList');
+      list.innerHTML = '';
+      deposits.forEach(d => {
+        const div = document.createElement('div');
+        div.className = `card ${d.status === 'closed' ? 'closed' : ''}`;
+        div.onclick = () => showAccountDetails(d);
+        const statusClass = d.status === 'active' ? 'status-active' : 'status-closed';
+        const statusText = d.status === 'active' ? 'Активен' : 'Закрыт';
+        div.innerHTML = `
+          <div class="card-header">
+            <span><i class="fa-solid fa-wallet" style="color:#28a745;"></i> Вклад №${d.id}</span>
+            <span class="status-badge ${statusClass}">${statusText}</span>
+          </div>
+          <div><b>${d.amount.toLocaleString()} ₽</b></div>
+          <div>Срок: ${d.termMonths} мес., ставка ${d.ratePerYear}% годовых</div>
+          ${d.status === 'active' ? '<div style="margin-top:6px;font-size:0.9em;color:#555;">Проценты: '+d.interest.toLocaleString()+' ₽ | Итого: '+d.total.toLocaleString()+' ₽</div>' : ''}
+        `;
+        list.appendChild(div);
+      });
+    }
+
+    let selectedDeposit = null;
+    function showAccountDetails(deposit) {
+      selectedDeposit = deposit;
+      document.getElementById('detailId').textContent = deposit.id;
+      document.getElementById('detailAmount').textContent = deposit.amount.toLocaleString() + ' ₽';
+      document.getElementById('detailTerm').textContent = deposit.termMonths + ' мес.';
+      document.getElementById('detailRate').textContent = deposit.ratePerYear + '%';
+      document.getElementById('detailInterest').textContent = deposit.interest.toLocaleString() + ' ₽';
+      document.getElementById('detailTotal').textContent = deposit.total.toLocaleString() + ' ₽';
+
+      const details = document.getElementById('accountDetails');
+      details.classList.add('visible');
+      details.scrollIntoView({ behavior: 'smooth' });
+    }
+
+    function closeSelectedAccount() {
+      if (!selectedDeposit) return;
+      selectedDeposit.status = 'closed';
+      renderDeposits();
+      closeAccountDetails();
+    }
+
+    function closeAccountDetails() {
+      document.getElementById('accountDetails').classList.remove('visible');
+      selectedDeposit = null;
+    }
+
+
+    // Кредиты
+    let credits = [];
+    function takeCredit() {
+      const amount = Number(document.getElementById('creditAmount').value);
+      const termMonths = Number(document.getElementById('creditTerm').value);
+
+      if (amount < 5000) { alert('Минимальная сумма кредита — 5000 ₽'); return; }
+
+      const ratePerYear = 15;
+      const overpayment = amount * (ratePerYear / 100) * (termMonths / 12);
+      const totalToPay = amount + overpayment;
+
+      credits.push({
+        id: Date.now(),
+        amount,
+        termMonths,
+        ratePerYear,
+        overpayment,
+        totalToPay,
+        status: 'active'
+      });
+      renderCredits();
+      document.getElementById('creditAmount').value = '';
+    }
+
+    function renderCredits() {
+      const list = document.getElementById('creditsList');
+      list.innerHTML = '';
+      credits.forEach(c => {
+        const div = document.createElement('div');
+        div.className = `card ${c.status === 'closed' ? 'closed' : ''}`;
+        div.onclick = () => showCreditDetails(c);
+        const statusClass = c.status === 'active' ? 'status-active' : 'status-closed';
+        const statusText = c.status === 'active' ? 'Активен' : 'Погашен';
+        div.innerHTML = `
+          <div class="card-header">
+            <span><i class="fa-solid fa-credit-card" style="color:#dc3545;"></i> Кредит №${c.id}</span>
+            <span class="status-badge ${statusClass}">${statusText}</span>
+          </div>
+          <div><b>${c.amount.toLocaleString()} ₽</b></div>
+          <div>Срок: ${c.termMonths} мес., ставка ${c.ratePerYear}% годовых</div>
+          ${c.status === 'active' ? '<div style="margin-top:6px;font-size:0.9em;color:#555;">Переплата: '+c.overpayment.toLocaleString()+' ₽ | Всего к выплате: '+c.totalToPay.toLocaleString()+' ₽</div>' : ''}
+        `;
+        list.appendChild(div);
+      });
+    }
+
+    let selectedCredit = null;
+    function showCreditDetails(credit) {
+      selectedCredit = credit;
+      document.getElementById('cDetailId').textContent = credit.id;
+      document.getElementById('cDetailAmount').textContent = credit.amount.toLocaleString() + ' ₽';
+      document.getElementById('cDetailTerm').textContent = credit.termMonths + ' мес.';
+      document.getElementById('cDetailRate').textContent = credit.ratePerYear + '%';
+      document.getElementById('cDetailOverpayment').textContent = credit.overpayment.toLocaleString() + ' ₽';
+      document.getElementById('cDetailTotal').textContent = credit.totalToPay.toLocaleString() + ' ₽';
+      const details = document.getElementById('creditDetails');
+      details.classList.add('visible');
+      details.scrollIntoView({ behavior: 'smooth' });
+    }
+
+    function closeSelectedCredit() {
+      if (!selectedCredit) return;
+      selectedCredit.status = 'closed';
+      renderCredits();
+      closeCreditDetails();
+    }
+
+    function closeCreditDetails() {
+      document.getElementById('creditDetails').classList.remove('visible');
+      selectedCredit = null;
+    }
+  </script>
+</body>
